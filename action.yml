@@ -1,0 +1,26 @@
+name: 'encrypt_upload_artifact'
+description: 'Sets up and runs Terraform, and creates an encrypted Terraform artifact'
+author: 'Paul Kelleher'
+inputs:
+  input:
+    description: 'folder containing the terraform code to deploy'
+    required: true
+  encryption_key:
+    description: 'Branch to select'
+    required: true
+  deployment_identifier:
+    description: 'the name of the artifact to be stored/retrieved'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: archive
+      run: |
+        find . -name ${{ inputs.input }} -exec tar -zcvf ./${{ inputs.deployment_identifier }}.tgz "{}" \;
+        find . -name ${{ inputs.deployment_identifier }}.tgz -exec openssl enc -aes-256-cbc -pass pass:"${{ inputs.encryption_key }}"  -in "{}" -out ${{ inputs.deployment_identifier }}.enc \;
+      shell: bash
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.deployment_identifier }}.enc
+        path: ${{ inputs.deployment_identifier }}.enc
